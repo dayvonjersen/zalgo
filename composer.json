@@ -1,0 +1,6 @@
+{
+    "require": {
+        "masterminds/html5": "2.*",
+        "leafo/scssphp": "0.6.2"
+    }
+}

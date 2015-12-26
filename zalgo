@@ -1,0 +1,93 @@
+#!/usr/bin/env php
+<?php
+function usage() {
+    echo "usage: zalgo [input-file.html]\n";
+    exit(2);
+}
+if(!defined('STDIN')) {
+    echo "Run from command-line pls.\n";
+    exit(1);
+}
+if($argc < 2) {
+    usage();
+}
+$input = $argv[1];
+if(!file_exists($input) || !is_readable($input) || is_dir($input)) {
+    echo "nonexistent or unreadable file $input\n";
+    usage();
+}
+if(!file_exists('vendor/autoload.php')) {
+    echo "$ composer install\n";
+    exit(1);
+}
+require_once 'vendor/autoload.php';
+
+use Masterminds\HTML5;
+use Leafo\ScssPhp\Compiler as SCSS;
+
+$html5 = new HTML5();
+$document = $html5->loadHTML(file_get_contents($input));
+$document->formatOutput = false;
+$document->preserveWhitespace = false;
+
+$nodeList = $document->getElementsByTagName('element');
+if($nodeList->length !== 1) {
+    echo "Missing <element>\n";
+    exit(1);
+}
+$elementElement = $nodeList->item(0);
+$elementTag = $elementElement->attributes->getNamedItem('name');
+if(!$elementTag) {
+    echo "Missing ``name'' attribute for <element>.\n";
+    exit(1);
+}
+$elementTag = $elementTag->value;
+$elementName = '';
+foreach(explode('-', $elementTag) as $bit) {
+    $elementName .= ucfirst($bit);
+}
+
+function getElement($tagName, $textOnly = false) {
+    global $document;
+    $ret = '';
+    foreach($document->getElementsByTagName($tagName) as $element) {
+        if($textOnly) {
+            $ret .= $element->textContent;
+        } else {
+            $ret .= $document->saveXML($element);
+        }
+    }
+    return $ret;
+}
+
+$css = getElement('style', true);
+$tpl = getElement('template', false);
+$tpl = addslashes($tpl);
+$tpl = preg_replace('/\s+/m', ' ', $tpl);
+$tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
+$js  = getElement('script', true);
+
+/***XXX
+echo "elementTag: $elementTag\n";
+echo "elementName: $elementName\n";
+echo "css: $css\n";
+echo "tpl: $tpl\n";
+echo "js: $js\n";
+XXX***/
+
+$css_out = (new SCSS())->compile("$elementTag { $css }");
+file_put_contents("tmp/$elementTag.css", $css_out);
+/***XXX
+echo "css_out: $css_out\n";
+XXX***/
+
+$js_out  = <<<JAVASCRIPT
+;(function(){
+$js
+Register("$elementName", "$elementTag", Q, "$tpl");
+})();
+JAVASCRIPT;
+file_put_contents("tmp/$elementTag.js", $js_out);
+/***XXX
+echo "js_out: $js_out\n";
+XXX***/
