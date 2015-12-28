@@ -1,6 +1,7 @@
 {
     "require": {
         "masterminds/html5": "2.*",
-        "leafo/scssphp": "0.6.2"
+        "leafo/scssphp": "0.6.2",
+        "matthiasmullie/minify": "^1.3"
     }
 }

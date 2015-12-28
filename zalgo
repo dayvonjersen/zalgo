@@ -1,21 +1,10 @@
 #!/usr/bin/env php
 <?php
-function usage() {
-    echo "usage: zalgo [input-file.html]\n";
-    exit(2);
-}
 if(!defined('STDIN')) {
     echo "Run from command-line pls.\n";
     exit(1);
 }
-if($argc < 2) {
-    usage();
-}
-$input = $argv[1];
-if(!file_exists($input) || !is_readable($input) || is_dir($input)) {
-    echo "nonexistent or unreadable file $input\n";
-    usage();
-}
+
 if(!file_exists('vendor/autoload.php')) {
     echo "$ composer install\n";
     exit(1);
@@ -24,31 +13,35 @@ require_once 'vendor/autoload.php';
 
 use Masterminds\HTML5;
 use Leafo\ScssPhp\Compiler as SCSS;
+use MatthiasMullie\Minify\JS as Minify;
 
-$html5 = new HTML5();
-$document = $html5->loadHTML(file_get_contents($input));
-$document->formatOutput = false;
-$document->preserveWhitespace = false;
-
-$nodeList = $document->getElementsByTagName('element');
-if($nodeList->length !== 1) {
-    echo "Missing <element>\n";
-    exit(1);
-}
-$elementElement = $nodeList->item(0);
-$elementTag = $elementElement->attributes->getNamedItem('name');
-if(!$elementTag) {
-    echo "Missing ``name'' attribute for <element>.\n";
-    exit(1);
-}
-$elementTag = $elementTag->value;
-$elementName = '';
-foreach(explode('-', $elementTag) as $bit) {
-    $elementName .= ucfirst($bit);
+function usage() {
+    echo "usage: zalgo [--single=input-file] [--compress] [--clean]\n";
+    echo "--single=input-file - an input-file.html in src/\n";
+    echo "--compress          - minify output\n\n";
+    echo "--clean             - delete all files in dist/ and tmp/ and exit.\n";
+    exit(2);
 }
 
-function getElement($tagName, $textOnly = false) {
-    global $document;
+function clean() {
+    `rm -rf dist/*.*`;
+    `rm -rf tmp/*.*`;
+}
+
+$options = getopt('', [
+    'single:',
+    'compress',
+    'clean'
+]);
+
+if(isset($options['clean'])) {
+    clean();
+    exit(0);
+}
+
+define(COMPRESS, isset($options['compress']));
+
+function getElement($document, $tagName, $textOnly = false) {
     $ret = '';
     foreach($document->getElementsByTagName($tagName) as $element) {
         if($textOnly) {
@@ -60,34 +53,102 @@ function getElement($tagName, $textOnly = false) {
     return $ret;
 }
 
-$css = getElement('style', true);
-$tpl = getElement('template', false);
-$tpl = addslashes($tpl);
-$tpl = preg_replace('/\s+/m', ' ', $tpl);
-$tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
-$js  = getElement('script', true);
+function compile($input) {
+    if(!file_exists($input) || !is_readable($input) || is_dir($input)) {
+        echo "nonexistent or unreadable file $input\n";
+        usage();
+    }
+    echo "compiling $input...\n";
 
-/***XXX
-echo "elementTag: $elementTag\n";
-echo "elementName: $elementName\n";
-echo "css: $css\n";
-echo "tpl: $tpl\n";
-echo "js: $js\n";
-XXX***/
+    $html5 = new HTML5();
+    $document = $html5->loadHTML(file_get_contents($input));
+    $document->formatOutput = false;
+    $document->preserveWhitespace = false;
 
-$css_out = (new SCSS())->compile("$elementTag { $css }");
-file_put_contents("tmp/$elementTag.css", $css_out);
-/***XXX
-echo "css_out: $css_out\n";
-XXX***/
+    $nodeList = $document->getElementsByTagName('element');
+    if($nodeList->length !== 1) {
+        echo "Missing <element>\n";
+        exit(1);
+    }
+    $elementElement = $nodeList->item(0);
+    $elementTag = $elementElement->attributes->getNamedItem('name');
+    if(!$elementTag) {
+        echo "Missing ``name'' attribute for <element>.\n";
+        exit(1);
+    }
+    $elementTag = $elementTag->value;
+    if("$elementTag.html" !== basename($input)) {
+        echo "WARN: element name: ``$elementTag''\n";
+        echo "does not match filename: $input\n";
+    }
+    $elementName = '';
+    foreach(explode('-', $elementTag) as $bit) {
+        $elementName .= ucfirst($bit);
+    }
 
-$js_out  = <<<JAVASCRIPT
+
+    $css = getElement($document, 'style', true);
+    $tpl = getElement($document, 'template', false);
+    $tpl = addslashes($tpl);
+    $tpl = preg_replace('/\s+/m', ' ', $tpl);
+    $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
+    $js  = getElement($document, 'script', true);
+
+    /***XXX
+    echo "elementTag: $elementTag\n";
+    echo "elementName: $elementName\n";
+    echo "css: $css\n";
+    echo "tpl: $tpl\n";
+    echo "js: $js\n";
+    XXX***/
+
+    $scss = new SCSS();
+    if(COMPRESS) {
+        $scss->setFormatter('Leafo\ScssPhp\Formatter\Crunched');
+    }
+    $css_out = $scss->compile("$elementTag { $css }");
+    file_put_contents("tmp/$elementTag.css", $css_out);
+    
+    //echo "css_out: $css_out\n";
+
+    $js_out  = <<<JAVASCRIPT
 ;(function(){
 $js
-Register("$elementName", "$elementTag", Q, "$tpl");
+Register("$elementName", "$elementTag", Z, "$tpl");
 })();
 JAVASCRIPT;
-file_put_contents("tmp/$elementTag.js", $js_out);
-/***XXX
-echo "js_out: $js_out\n";
-XXX***/
+
+    if(COMPRESS) {
+        $minify = new Minify($js_out);
+        file_put_contents("tmp/$elementTag.min.js", $minify->minify());
+    } else {
+        file_put_contents("tmp/$elementTag.js", $js_out);
+    }
+
+    //echo "js_out: $js_out\n";
+}
+
+if(isset($options['single'])) {
+    if(!is_array($options['single'])) {
+        $options['single'] = [$options['single']];
+    }
+    foreach($options['single'] as $filename) {
+        $filename = pathinfo($filename, PATHINFO_FILENAME);
+        compile('src/'.$filename.'.html');
+        `mv tmp/$filename.* dist/`;
+    }
+} else {
+    clean();
+    $d = dir('src');
+    while(($f = $d->read())!==false) {
+        if(is_dir($f) || pathinfo($f, PATHINFO_EXTENSION) !== 'html') continue;
+        compile('src/'.$f);
+    }
+    if(COMPRESS) {
+        `cat CustomElements.min.js hecomes.min.js tmp/*.min.js > dist/webcomponents.min.js`;
+        `cat tmp/*.css > dist/webcomponents.min.css`;
+    } else {
+        `cat CustomElements.js hecomes.js tmp/*.js > dist/webcomponents.js`;
+        `cat tmp/*.css > dist/webcomponents.css`;
+    }
+}
