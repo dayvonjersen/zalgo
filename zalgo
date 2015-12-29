@@ -103,9 +103,7 @@ function compile($input) {
     XXX***/
 
     $scss = new SCSS();
-    if(COMPRESS) {
-        $scss->setFormatter('Leafo\ScssPhp\Formatter\Crunched');
-    }
+    $scss->setFormatter('Leafo\ScssPhp\Formatter\\'. (COMPRESS ? 'Crunched' : 'Expanded'));
     $css_out = $scss->compile("$elementTag { $css }");
     file_put_contents("tmp/$elementTag.css", $css_out);
     
