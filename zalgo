@@ -13,33 +13,47 @@ require_once 'vendor/autoload.php';
 
 use Masterminds\HTML5;
 use Leafo\ScssPhp\Compiler as SCSS;
-use MatthiasMullie\Minify\JS as Minify;
 
 function usage() {
-    echo "usage: zalgo [--single=input-file] [--compress] [--clean]\n";
+    echo "usage: zalgo [OPTIONS] \n";
+    echo "options:\n";
     echo "--single=input-file - an input-file.html in src/\n";
-    echo "--compress          - minify output\n\n";
-    echo "--clean             - delete all files in dist/ and tmp/ and exit.\n";
+    echo "--src-dir=src       - path to use as source (default src/)\n";
+    echo "--tmp-dir=tmp       - path to use for temp  (default tmp/)\n";
+    echo "--dist-dir=dist     - path to use as dist  (default dist/)\n";
     exit(2);
-}
-
-function clean() {
-    `rm -rf dist/*.*`;
-    `rm -rf tmp/*.*`;
 }
 
 $options = getopt('', [
     'single:',
-    'compress',
-    'clean'
+    'src-dir:',
+    'tmp-dir:',
+    'dist-dir:'
 ]);
 
-if(isset($options['clean'])) {
-    clean();
-    exit(0);
+function opterror($opt, $val, $msg) {
+    echo "invalid value passed to --$opt:\n";
+    echo $val, ' ', $msg, "\n";
+    exit(1);
 }
 
-define(COMPRESS, isset($options['compress']));
+foreach(['src','tmp','dist'] as $d) {
+    $def = $d;
+    $opt = "$d-dir";
+    if(isset($options[$opt])) {
+        $usrdir = $options[$opt];
+        switch(true) {
+        case !is_dir($usrdir):
+            opterror($opt, $usrdir, 'is not a directory.');
+        case !is_readable($usrdir):
+            opterror($opt, $usrdir, 'is not readable.');
+        case $opt !== 'src-dir' && !is_writable($usrdir):
+            opterror($opt, $usrdir, 'is not writable.');
+        }
+        $def = $usrdir;
+    }
+    define(strtoupper($d).'_DIR', rtrim($def, DIRECTORY_SEPARATOR) . '/');
+}
 
 function getElement($document, $tagName, $textOnly = false) {
     $ret = '';
@@ -47,7 +61,7 @@ function getElement($document, $tagName, $textOnly = false) {
         if($textOnly) {
             $ret .= $element->textContent;
         } else {
-            $ret .= $document->saveXML($element);
+            $ret .= $document->saveXML($element,LIBXML_NOEMPTYTAG);
         }
     }
     return $ret;
@@ -86,7 +100,6 @@ function compile($input) {
         $elementName .= ucfirst($bit);
     }
 
-
     $css = getElement($document, 'style', true);
     $tpl = getElement($document, 'template', false);
     $tpl = addslashes($tpl);
@@ -94,36 +107,18 @@ function compile($input) {
     $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
     $js  = getElement($document, 'script', true);
 
-    /***XXX
-    echo "elementTag: $elementTag\n";
-    echo "elementName: $elementName\n";
-    echo "css: $css\n";
-    echo "tpl: $tpl\n";
-    echo "js: $js\n";
-    XXX***/
-
     $scss = new SCSS();
-    $scss->setFormatter('Leafo\ScssPhp\Formatter\\'. (COMPRESS ? 'Crunched' : 'Expanded'));
+    $scss->setFormatter('Leafo\ScssPhp\Formatter\\Expanded');
     $css_out = $scss->compile("$elementTag { $css }");
-    file_put_contents("tmp/$elementTag.css", $css_out);
+    file_put_contents(TMP_DIR.$elementTag.'.css', $css_out);
     
-    //echo "css_out: $css_out\n";
-
     $js_out  = <<<JAVASCRIPT
 ;(function(){
 $js
 Register("$elementName", "$elementTag", Z, "$tpl");
 })();
 JAVASCRIPT;
-
-    if(COMPRESS) {
-        $minify = new Minify($js_out);
-        file_put_contents("tmp/$elementTag.min.js", $minify->minify());
-    } else {
-        file_put_contents("tmp/$elementTag.js", $js_out);
-    }
-
-    //echo "js_out: $js_out\n";
+    file_put_contents(TMP_DIR.$elementTag.'.js', $js_out);
 }
 
 if(isset($options['single'])) {
@@ -132,21 +127,12 @@ if(isset($options['single'])) {
     }
     foreach($options['single'] as $filename) {
         $filename = pathinfo($filename, PATHINFO_FILENAME);
-        compile('src/'.$filename.'.html');
-        `mv tmp/$filename.* dist/`;
+        compile(SRC_DIR.$filename.'.html');
     }
 } else {
-    clean();
-    $d = dir('src');
+    $d = dir(SRC_DIR);
     while(($f = $d->read())!==false) {
         if(is_dir($f) || pathinfo($f, PATHINFO_EXTENSION) !== 'html') continue;
-        compile('src/'.$f);
-    }
-    if(COMPRESS) {
-        `cat CustomElements.min.js hecomes.min.js tmp/*.min.js > dist/webcomponents.min.js`;
-        `cat tmp/*.css > dist/webcomponents.min.css`;
-    } else {
-        `cat CustomElements.js hecomes.js tmp/*.js > dist/webcomponents.js`;
-        `cat tmp/*.css > dist/webcomponents.css`;
+        compile(SRC_DIR.$f);
     }
 }
