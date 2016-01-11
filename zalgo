@@ -132,7 +132,7 @@ if(isset($options['single'])) {
 } else {
     $d = dir(SRC_DIR);
     while(($f = $d->read())!==false) {
-        if(is_dir($f) || pathinfo($f, PATHINFO_EXTENSION) !== 'html') continue;
+        if(is_dir($f) || pathinfo($f, PATHINFO_EXTENSION) !== 'html' || $f[0] === '.') continue;
         compile(SRC_DIR.$f);
     }
 }
