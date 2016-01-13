@@ -9,6 +9,9 @@ if(!file_exists('vendor/autoload.php')) {
     echo "$ composer install\n";
     exit(1);
 }
+
+mb_internal_encoding('UTF-8');
+
 require_once 'vendor/autoload.php';
 
 use Masterminds\HTML5;
@@ -28,8 +31,13 @@ $options = getopt('', [
     'single:',
     'src-dir:',
     'tmp-dir:',
-    'dist-dir:'
+    'dist-dir:',
+    'help'
 ]);
+
+if(isset($options['help'])) {
+    usage();
+}
 
 function opterror($opt, $val, $msg) {
     echo "invalid value passed to --$opt:\n";
@@ -76,6 +84,7 @@ function compile($input) {
 
     $html5 = new HTML5();
     $document = $html5->loadHTML(file_get_contents($input));
+    $document->encoding = 'utf-8';
     $document->formatOutput = false;
     $document->preserveWhitespace = false;
 
@@ -103,8 +112,10 @@ function compile($input) {
     $css = getElement($document, 'style', true);
     $tpl = getElement($document, 'template', false);
     $tpl = addslashes($tpl);
+    // HE COMES
+    $tpl = preg_replace('/\n/', '\n', $tpl);
     $tpl = preg_replace('/\s+/m', ' ', $tpl);
-    $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
+    $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); 
     $js  = getElement($document, 'script', true);
 
     $scss = new SCSS();
