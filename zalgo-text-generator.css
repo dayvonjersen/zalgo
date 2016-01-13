@@ -1,0 +1,101 @@
+/**
+ * thus you can use Sass here, specifically e.g. target the element itself:
+ */
+zalgo-text-generator {
+  /* cheap reset */
+  /* isn't vendor prefixing AMAZING */
+  /* stuff */
+  /* more stuff */
+  /**
+   * pond sieve
+   */
+}
+zalgo-text-generator {
+  font-family: sans-serif;
+  color: #000;
+}
+zalgo-text-generator * {
+  margin: 0;
+  padding: 0;
+}
+zalgo-text-generator ::selection {
+  background: #000;
+  color: #ccc;
+}
+zalgo-text-generator ::-moz-selection {
+  background: #000;
+  color: #ccc;
+}
+zalgo-text-generator ::-webkit-selection {
+  background: #000;
+  color: #ccc;
+}
+zalgo-text-generator header {
+  padding: 1em 0;
+}
+zalgo-text-generator h1, zalgo-text-generator h2 {
+  line-height: 2em;
+}
+zalgo-text-generator h2 {
+  font-size: 1rem;
+}
+zalgo-text-generator h2 a {
+  color: #000;
+}
+zalgo-text-generator h2 a:hover {
+  text-decoration: none;
+  background: #000;
+  color: #fff;
+}
+zalgo-text-generator pre, zalgo-text-generator textarea {
+  font-family: sans-serif;
+}
+zalgo-text-generator main, zalgo-text-generator .zalgo-input {
+  display: flex;
+  flex-wrap: wrap;
+}
+zalgo-text-generator .zalgo-output {
+  overflow: auto;
+}
+zalgo-text-generator .zalgo-output, zalgo-text-generator .zalgo-input {
+  border: 2px solid;
+  flex: 1 1 100%;
+  margin: 2px;
+}
+@media (min-width: 800px) {
+  zalgo-text-generator main {
+    flex-wrap: nowrap;
+  }
+  zalgo-text-generator .zalgo-output, zalgo-text-generator .zalgo-input {
+    flex: 1 1 50%;
+  }
+}
+zalgo-text-generator .zalgo-output__destination {
+  padding: 1em;
+  text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.7);
+}
+zalgo-text-generator textarea {
+  flex: 1 1 100%;
+  min-height: 10em;
+  resize: resize-y;
+  margin: 1px;
+  padding: 2px;
+}
+zalgo-text-generator .zalgo-input__options {
+  flex: 0 1 50%;
+}
+zalgo-text-generator .zalgo-input__options label {
+  display: block;
+  padding: 2px;
+}
+zalgo-text-generator .zalgo-input__options input {
+  margin-right: 2px;
+}
+@media (min-width: 640px) {
+  zalgo-text-generator .zalgo-output__destination {
+    padding: 4em;
+  }
+  zalgo-text-generator .zalgo-input__options {
+    flex: 0 1 33%;
+  }
+}
