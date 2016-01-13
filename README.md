@@ -1,5 +1,14 @@
 **zalgo**<sup>[\*] which may or may not parse HTML with regex.҉̳̞̮̳̺͙̹̝͉̮̳͓̗͈</sup> will help you create custom elements.
 
+```
+usage: zalgo [OPTIONS]
+options:
+--single=input-file - an input-file.html in src/
+--src-dir=src       - path to use as source (default src/)
+--tmp-dir=tmp       - path to use for temp  (default tmp/)
+--dist-dir=dist     - path to use as dist  (default dist/)
+```
+
 ## example widget result demo thing:
 
 [zalgo-text-generator](https://generaltso.github.io/zalgo/)
@@ -410,9 +419,9 @@ ZALGO!</textarea>
 
 `./zalgo --single=zalgo-text-generator.html`
 
-(*will extract relevant bits from the html and mess with them a bit
+(*will extract relevant bits from the html and mess with them a bit*)
 
-before concatenating with CustomElements.js and hecomes.js in project directory*)
+(*build.sh will concatenating with CustomElements.js and hecomes.js in project directory*)
 
 ## use in your public-facing html:
 
