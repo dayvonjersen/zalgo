@@ -168,7 +168,7 @@ ZALGO!</textarea>
                     <label>
                         <input type="checkbox"
                                class="zalgo-input__direction--mid"
-                               checked>fuck up going the middle</label>
+                               checked>fuck up the middle</label>
                     <label>
                         <input type="checkbox"
                                class="zalgo-input__direction--down"
