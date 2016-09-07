@@ -71,6 +71,7 @@ function getElement($document, $tagName, $textOnly = false) {
         } else {
             $ret .= $document->saveXML($element,LIBXML_NOEMPTYTAG);
         }
+        break;
     }
     return $ret;
 }
@@ -84,7 +85,6 @@ function compile($input) {
 
     $html5 = new HTML5();
     $document = $html5->loadHTML(file_get_contents($input));
-    $document->encoding = 'utf-8';
     $document->formatOutput = false;
     $document->preserveWhitespace = false;
 
@@ -112,10 +112,9 @@ function compile($input) {
     $css = getElement($document, 'style', true);
     $tpl = getElement($document, 'template', false);
     $tpl = addslashes($tpl);
-    // HE COMES
-    $tpl = preg_replace('/\n/', '\n', $tpl);
+    $tpl = preg_replace('/\n+/m', '', $tpl);
     $tpl = preg_replace('/\s+/m', ' ', $tpl);
-    $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); 
+    $tpl = preg_replace('/<template>(.*)<\/template>/', '\1', $tpl); // HE COMES
     $js  = getElement($document, 'script', true);
 
     $scss = new SCSS();
