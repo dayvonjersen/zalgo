@@ -349,7 +349,7 @@ ZALGO!</textarea>
                  * `this` is the custom element itself.
                  */
                 // grab template
-                var tpl = this.template.content.cloneNode(true);
+                var tpl = document.importNode(this.template.content, true);
                 // select the elements we need
                 var destination = tpl.querySelector('.zalgo-output__destination');
                 var textarea = tpl.querySelector('.zalgo-input__textarea');
