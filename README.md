@@ -9,10 +9,6 @@ options:
 --dist-dir=dist     - path to use as dist  (default dist/)
 ```
 
-## example widget result demo thing:
-
-[zalgo-text-generator](https://generaltso.github.io/zalgo/)
-
 ## given this input file:
 ```html
 <!-- to expose an element
@@ -410,10 +406,6 @@ ZALGO!</textarea>
     </script>
 </element>
 ```
-
-## you get this output:
-
-[demo of zalgo-text-generator](https://generaltso.github.io/zalgo/)
 
 ## when called with:
 
